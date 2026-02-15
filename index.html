@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Para Ti ❤️</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Playfair Display', serif;
+            background: linear-gradient(135deg, #251866 0%, #ffe0f0 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 800px;
+            height: 95vh;
+            height: 95dvh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(255, 105, 180, 0.3);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Pantalla inicial con corazón */
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            cursor: pointer;
+            transition: opacity 0.8s ease;
+            padding: 20px;
+        }
+
+        .start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .heart-button {
+            font-size: clamp(3rem, 15vw, 5rem);
+            color: #e74c3c;
+            animation: pulse 1.5s ease-in-out infinite;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(231, 76, 60, 0.3));
+        }
+
+        .start-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(1.8rem, 8vw, 2.5rem);
+            color: #c0392b;
+            text-decoration: underline;
+            text-decoration-color: #e74c3c;
+            text-underline-offset: 8px;
+            text-align: center;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Canvas para el árbol */
+        #treeCanvas {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            width: 100%;
+            height: 70%;
+        }
+
+        /* Semilla que cae */
+        .seed {
+            position: absolute;
+            width: clamp(10px, 3vw, 14px);
+            height: clamp(10px, 3vw, 14px);
+            background: #c0392b;
+            border-radius: 50%;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .seed.falling {
+            display: block;
+            animation: fall 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes fall {
+            0% { top: 40%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(0.8); }
+            100% { top: 75%; opacity: 1; transform: translate(-50%, -50%) scale(0.6); }
+        }
+
+        /* Contenedor de texto principal */
+        .text-container {
+            position: absolute;
+            top: 3%;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .main-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(1.3rem, 4.5vw, 1.9rem);
+            color: #2c3e50;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 1s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .main-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Contador */
+        .counter-container {
+            position: absolute;
+            top: 16%;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+            text-align: center;
+            padding: 0 15px;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .counter-container.visible {
+            opacity: 1;
+        }
+
+        .counter-label {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(0.95rem, 3.8vw, 1.2rem);
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .counter-time {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(0.85rem, 3.2vw, 1rem);
+            color: #e74c3c;
+            font-weight: bold;
+            line-height: 1.6;
+        }
+
+        .counter-time span {
+            display: inline-block;
+            min-width: 22px;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+            margin: 0 1px;
+        }
+
+        .time-unit {
+            font-size: 0.75em;
+            color: #666;
+            font-weight: normal;
+            margin: 0 2px;
+            background: transparent !important;
+            padding: 0 !important;
+            min-width: auto !important;
+        }
+
+        /* Corazones cayendo - CSS para los que caen del árbol */
+        .falling-hearts-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+            overflow: hidden;
+        }
+
+        .falling-heart {
+            position: absolute;
+            font-size: clamp(0.7rem, 2.5vw, 1rem);
+            animation: fallDown linear infinite;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+            pointer-events: none;
+        }
+
+        @keyframes fallDown {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0.9;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg) scale(0.6);
+                opacity: 0;
+            }
+        }
+
+        /* Efecto de brillo */
+        .glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 80%, rgba(255, 182, 193, 0.3) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Ajustes específicos para móvil */
+        @media (max-width: 480px) {
+            .container {
+                width: 98%;
+                height: 98vh;
+                border-radius: 15px;
+            }
+
+            .text-container {
+                top: 2%;
+            }
+
+            .counter-container {
+                top: 12%;
+            }
+
+            #treeCanvas {
+                height: 75%;
+            }
+        }
+
+        /* Orientación landscape en móvil */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .text-container {
+                top: 2%;
+                width: 50%;
+                left: 0;
+            }
+
+            .counter-container {
+                top: 2%;
+                left: auto;
+                right: 2%;
+                width: 45%;
+                text-align: right;
+            }
+
+            #treeCanvas {
+                height: 85%;
+                width: 60%;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <div class="glow"></div>
+
+        <!-- Pantalla inicial -->
+        <div class="start-screen" id="startScreen">
+            <div class="heart-button">❤️</div>
+            <div class="start-text">La Raíz de mi amor por ti</div>
+        </div>
+
+        <!-- Semilla -->
+        <div class="seed" id="seed"></div>
+
+        <!-- Canvas para el árbol -->
+        <canvas id="treeCanvas"></canvas>
+
+        <!-- Texto principal -->
+        <div class="text-container">
+            <div class="main-text" id="mainText">Mientras este árbol tenga hojas mi amor por ti siempre estará</div>
+        </div>
+
+        <!-- Contador -->
+        <div class="counter-container" id="counterContainer">
+            <div class="counter-label">Mi amor por ti empezó desde nuestro mes: NOVIEMBRE 2025</div>
+            <div class="counter-time">
+                <span id="days">000</span><span class="time-unit">días</span>
+                <span id="hours">00</span><span class="time-unit">hrs</span>
+                <span id="minutes">00</span><span class="time-unit">min</span>
+                <span id="seconds">00</span><span class="time-unit">seg</span>
+            </div>
+        </div>
+
+        <!-- Contenedor de corazones cayendo -->
+        <div class="falling-hearts-container" id="fallingHearts"></div>
+    </div>
+
+    <script>
+        // FECHA ESPECIAL: Lunes 3 de noviembre de 2025
+        const START_DATE = new Date('2025-11-03T00:00:00');
+
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const seed = document.getElementById('seed');
+        const fallingContainer = document.getElementById('fallingHearts');
+
+        let animationId;
+        let treeGrown = false;
+        let hearts = []; // Hojas en el árbol
+        let fallingHearts = []; // Corazones cayendo
+        let branches = [];
+
+        // Configuración responsive del árbol
+        function getTreeConfig() {
+            const width = canvas.width / (window.devicePixelRatio || 1);
+            const height = canvas.height / (window.devicePixelRatio || 1);
+            const isMobile = window.innerWidth <= 480;
+
+            return {
+                startX: width / 2,
+                startY: height - (isMobile ? 20 : 40),
+                trunkLength: isMobile ? height * 0.16 : height * 0.20,
+                angle: -Math.PI / 2,
+                branchWidth: isMobile ? 7 : 11,
+                color: '#8B4513'
+            };
+        }
+
+        // Ajustar canvas
+        function resizeCanvas() {
+            const container = document.querySelector('.container');
+            const dpr = window.devicePixelRatio || 1;
+
+            const displayWidth = container.clientWidth;
+            const displayHeight = container.clientHeight * 0.75;
+
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+
+            ctx.scale(dpr, dpr);
+        }
+
+        startScreen.addEventListener('click', startAnimation);
+
+        function startAnimation() {
+            startScreen.classList.add('hidden');
+            seed.classList.add('falling');
+
+            setTimeout(() => {
+                seed.style.display = 'none';
+                resizeCanvas();
+                growTree();
+            }, 2000);
+        }
+
+        function growTree() {
+            let growth = 0;
+            const maxGrowth = 1;
+            const growthSpeed = 0.012;
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const config = getTreeConfig();
+
+                if (growth < maxGrowth) {
+                    growth += growthSpeed;
+                    drawTree(config.startX, config.startY, 
+                            config.trunkLength * growth, 
+                            config.angle, 
+                            config.branchWidth * growth, 
+                            0, growth);
+
+                    animationId = requestAnimationFrame(animate);
+                } else {
+                    if (!treeGrown) {
+                        treeGrown = true;
+                        // Generar estructura del árbol
+                        generateTreeStructure(config.startX, config.startY, config.trunkLength, config.angle, 0);
+                        // Crear hojas en las ramas
+                        createLeaves();
+                        // Iniciar animaciones
+                        startTextAnimation();
+                        startCounter();
+                        startFallingHeartsLoop();
+                    }
+
+                    // Dibujar árbol
+                    drawTree(config.startX, config.startY, 
+                            config.trunkLength, 
+                            config.angle, 
+                            config.branchWidth, 
+                            0, 1);
+
+                    // Dibujar hojas (siempre se mantienen, nunca se acaban)
+                    drawLeaves();
+
+                    animationId = requestAnimationFrame(animate);
+                }
+            }
+
+            animate();
+        }
+
+        function drawTree(x, y, len, angle, width, depth, growth) {
+            if (depth > 9 * growth || len < 4) return;
+
+            const endX = x + len * Math.cos(angle);
+            const endY = y + len * Math.sin(angle);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = width * (1 - depth * 0.08);
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            const newLen = len * 0.72;
+            const newWidth = width * 0.7;
+            const spread = 0.45 + (depth * 0.06);
+
+            drawTree(endX, endY, newLen, angle - spread, newWidth, depth + 1, growth);
+            drawTree(endX, endY, newLen, angle + spread, newWidth, depth + 1, growth);
+        }
+
+        function generateTreeStructure(x, y, len, angle, depth) {
+            if (depth > 9 || len < 4) {
+                // Guardar posiciones terminales para las hojas
+                if (depth > 3) {
+                    branches.push({x, y, depth, angle});
+                }
+                return;
+            }
+
+            const endX = x + len * Math.cos(angle);
+            const endY = y + len * Math.sin(angle);
+            const newLen = len * 0.72;
+            const spread = 0.45 + (depth * 0.06);
+
+            generateTreeStructure(endX, endY, newLen, angle - spread, depth + 1);
+            generateTreeStructure(endX, endY, newLen, angle + spread, depth + 1);
+        }
+
+        function createLeaves() {
+            // Crear múltiples hojas por rama para que se vea frondoso
+            branches.forEach((branch) => {
+                const numLeaves = Math.floor(Math.random() * 3) + 2; // 2-4 hojas por rama
+
+                for (let i = 0; i < numLeaves; i++) {
+                    const offsetX = (Math.random() - 0.5) * 30;
+                    const offsetY = (Math.random() - 0.5) * 30;
+
+                    hearts.push({
+                        x: branch.x + offsetX,
+                        y: branch.y + offsetY,
+                        baseX: branch.x + offsetX,
+                        baseY: branch.y + offsetY,
+                        size: Math.random() * 5 + 4,
+                        color: `hsl(${Math.random() * 50 + 330}, 85%, ${Math.random() * 20 + 55}%)`,
+                        offset: Math.random() * Math.PI * 2,
+                        phase: Math.random() * Math.PI * 2,
+                        swaySpeed: Math.random() * 0.5 + 0.5
+                    });
+                }
+            });
+        }
+
+        function drawLeaves() {
+            const time = Date.now() * 0.001;
+
+            hearts.forEach((heart) => {
+                // Movimiento suave de balanceo (las hojas se quedan en el árbol)
+                const sway = Math.sin(time * heart.swaySpeed + heart.offset) * 3;
+                const floatY = Math.sin(time * 0.8 + heart.phase) * 2;
+
+                heart.x = heart.baseX + sway;
+                heart.y = heart.baseY + floatY;
+
+                drawHeart(heart.x, heart.y, heart.size, heart.color);
+            });
+        }
+
+        function drawHeart(x, y, size, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+
+            const topCurveHeight = size * 0.3;
+            ctx.moveTo(0, topCurveHeight);
+            ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
+            ctx.bezierCurveTo(-size/2, (size + topCurveHeight) / 2, 0, size, 0, size);
+            ctx.bezierCurveTo(0, size, size/2, (size + topCurveHeight) / 2, size/2, topCurveHeight);
+            ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
+
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Crear corazones cayendo desde el árbol (infinitos, sin quitar hojas)
+        function createFallingHeartFromTree() {
+            if (hearts.length === 0) return;
+
+            // Seleccionar una hoja aleatoria del árbol como punto de origen
+            const sourceHeart = hearts[Math.floor(Math.random() * hearts.length)];
+
+            const heartEl = document.createElement('div');
+            heartEl.className = 'falling-heart';
+            heartEl.innerHTML = '❤️';
+
+            // Posición relativa al árbol
+            const canvasRect = canvas.getBoundingClientRect();
+            const containerRect = document.querySelector('.container').getBoundingClientRect();
+
+            const startX = canvasRect.left - containerRect.left + sourceHeart.x;
+            const startY = canvasRect.top - containerRect.top + sourceHeart.y;
+
+            heartEl.style.left = startX + 'px';
+            heartEl.style.top = startY + 'px';
+            heartEl.style.color = sourceHeart.color;
+
+            // Variación en el tamaño
+            const scale = Math.random() * 0.4 + 0.8;
+            heartEl.style.transform = `scale(${scale})`;
+
+            // Duración aleatoria para que no caigan todos iguales
+            const duration = Math.random() * 2 + 3; // 3-5 segundos
+            heartEl.style.animationDuration = duration + 's';
+
+            fallingContainer.appendChild(heartEl);
+
+            // Eliminar después de la animación
+            setTimeout(() => {
+                if (heartEl.parentNode) {
+                    heartEl.remove();
+                }
+            }, duration * 1000);
+        }
+
+        function startFallingHeartsLoop() {
+            // Crear corazones cayendo periódicamente
+            // Cada 300-800ms sale uno nuevo
+            function scheduleNext() {
+                const delay = Math.random() * 500 + 300;
+                setTimeout(() => {
+                    if (document.hidden === false) {
+                        createFallingHeartFromTree();
+                        // A veces crear dos para más efecto
+                        if (Math.random() > 0.7) {
+                            setTimeout(createFallingHeartFromTree, 200);
+                        }
+                    }
+                    scheduleNext();
+                }, delay);
+            }
+
+            scheduleNext();
+        }
+
+        function startTextAnimation() {
+            setTimeout(() => {
+                document.getElementById('mainText').classList.add('visible');
+            }, 500);
+
+            setTimeout(() => {
+                document.getElementById('counterContainer').classList.add('visible');
+            }, 1500);
+        }
+
+        function startCounter() {
+            function updateCounter() {
+                const now = new Date();
+                const diff = now - START_DATE;
+
+                if (diff < 0) {
+                    document.getElementById('days').textContent = '000';
+                    document.getElementById('hours').textContent = '00';
+                    document.getElementById('minutes').textContent = '00';
+                    document.getElementById('seconds').textContent = '00';
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = days.toString().padStart(3, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            }
+
+            updateCounter();
+            setInterval(updateCounter, 1000);
+        }
+
+        // Manejar resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                resizeCanvas();
+                if (treeGrown) {
+                    // Recalcular posiciones
+                    branches = [];
+                    hearts = [];
+                    const config = getTreeConfig();
+                    generateTreeStructure(config.startX, config.startY, config.trunkLength, config.angle, 0);
+                    createLeaves();
+                }
+            }, 250);
+        });
+
+        // Inicializar
+        resizeCanvas();
+    </script>
+</body>
+</html>
